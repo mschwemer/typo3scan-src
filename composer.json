@@ -17,8 +17,8 @@
     "symfony/yaml": "^7.4",
     "twig/twig": "^v3.23",
     "symfony/console": "^7.4",
-    "symfony/debug": "^3.4",
-    "symfony/filesystem": "^3.4",
+    "symfony/debug": "^4.4",
+    "symfony/filesystem": "^7.4",
     "symfony/string": "^7.4"
   },
   "repositories": [

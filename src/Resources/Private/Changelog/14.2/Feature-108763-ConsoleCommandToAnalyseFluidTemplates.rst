@@ -3,7 +3,7 @@
 ..  _feature-108763-1769331943:
 
 =============================================================
-Feature: #108763 - Console command to analyse Fluid templates
+Feature: #108763 - Console command to analyze Fluid templates
 =============================================================
 
 See :issue:`108763`
@@ -11,15 +11,15 @@ See :issue:`108763`
 Description
 ===========
 
-The `fluid:analyse` console command is introduced, which analyses
-Fluid templates in the current project for correct Fluid syntax and alerts
-about deprecations that are emitted during template parsing.
+The :bash:`typo3 fluid:analyze` console command is introduced, which analyzes
+Fluid templates in the current project for correct Fluid syntax and reports
+deprecations that are emitted during template parsing.
 
 Usage:
 
 ..  code-block:: bash
 
-    vendor/bin/typo3 fluid:analyse
+    vendor/bin/typo3 fluid:analyze
 
 Example output:
 
@@ -29,38 +29,87 @@ Example output:
     [ERROR] packages/myext/Resources/Private/Templates/Test2.fluid.html: Variable identifiers cannot start with a "_": _temp
 
 In its initial implementation, the command automatically finds all Fluid
-templates within the current project based on the `*.fluid.*` file extension (See
+templates within the current project based on the `*.fluid.*` file extension
+(see
 :ref:`Feature: #108166 - Fluid file extension and template resolving <feature-108166-1763400992>`)
-and analyses them. The following errors and deprecations are currently supported:
+and analyzes them. By default, TYPO3 system extensions are skipped. This can
+be adjusted by specifying the :bash:`--include-system-extensions` CLI option.
 
-*   Fluid syntax errors (e. g. invalid nesting of ViewHelper tags)
+The following errors and deprecations are currently supported:
+
+*   Fluid syntax errors (for example, invalid nesting of ViewHelper tags)
 *   Usage of invalid ViewHelpers or ViewHelper namespaces
 *   Usage of variable names that start with `_`
     (see :ref:`Breaking: #108148 - Disallow Fluid variable names with underscore prefix <breaking-108148-1763288414>`)
 *   Usage of deprecated ViewHelpers or ViewHelper arguments (if deprecation
     is triggered during parse time, see
-    :ref:`Deprecating ViewHelpers <feature-108763-1769331943-deprecating-viewhelpers>` and
+    :ref:`Deprecating ViewHelpers <feature-108763-1769331943-deprecating-viewhelpers>`
+    and
     :ref:`Deprecating ViewHelper arguments <feature-108763-1769331943-deprecating-viewhelper-arguments>`)
 
 If exceptions are caught during the parsing process of at least one template,
-the console command has a return status of 1 (error), otherwise it returns 0
+the console command will have a return status of 1 (error). Otherwise, it will return 0
 (success). This means that deprecations are not interpreted as errors.
 
-This should make it possible to use the command in CI workflows of most projects,
-since deprecated functionality used by third-party templates won't make the
-pipeline fail.
+This should make it possible to use the command in CI workflows of most
+projects, since deprecated functionality used by third-party templates will
+not make the pipeline fail.
 
-Verbose output allows to get feedback of analyzed templates
-and the number of errors/deprecations (or success).
+Verbose output allows users to get feedback on the analyzed templates
+and the number of errors and deprecations, or success.
+
+..  _feature-108763-1769331943-tool-integration:
+
+Integration with other tools
+----------------------------
+
+The command also supports input of a template string via `STDIN` as well as
+machine-readable output as JSON. This enables better integration with other
+development-related tools.
+
+Usage:
+
+..  code-block:: bash
+
+    echo "<formvh:form.timePicker /> {_invalidVariable}" | vendor/bin/typo3 fluid:analyze --stdin --json
+
+Example output (formatted):
+
+..  code-block:: json
+
+    {
+        "identifier": "template__5adb1a7702b9dcbf",
+        "path": "php:\/\/stdin",
+        "errors": [
+            {
+                "file": "\/var\/www\/html\/vendor\/typo3fluid\/fluid\/src\/Core\/Parser\/TemplateParser.php",
+                "line": 130,
+                "message": "Fluid parse error in template php:\/\/stdin, line 2 at character 27. Error: Variable identifiers cannot start with a \"_\": _invalidVariable (error code 1765900762). Template source chunk:    {_invalidVariable}\n",
+                "templateLocation": {
+                    "identifierOrPath": "php:\/\/stdin",
+                    "line": 2,
+                    "character": 27
+                }
+            }
+        ],
+        "deprecations": [
+            {
+                "file": "\/var\/www\/html\/typo3\/sysext\/form\/Classes\/ViewHelpers\/Form\/TimePickerViewHelper.php",
+                "line": 143,
+                "message": "The TimePickerViewHelper is deprecated since TYPO3 v14 and will be removed in v15."
+            }
+        ]
+    }
 
 ..  _feature-108763-1769331943-deprecating-viewhelpers:
 
 Deprecating ViewHelpers
 -----------------------
 
-The `fluid:analyse` console command can catch deprecations of whole ViewHelpers
-if the deprecation is emitted during parse time of a template. This is possible
-by implementing the :php-short:`\TYPO3Fluid\Fluid\Core\ViewHelper\ViewHelperNodeInitializedEventInterface`:
+The :bash:`fluid:analyze` console command can catch deprecations of whole
+ViewHelpers if the deprecation is emitted during the parse time of a template.
+This is possible by implementing the
+:php-short:`\TYPO3Fluid\Fluid\Core\ViewHelper\ViewHelperNodeInitializedEventInterface`:
 
 ..  code-block:: php
     :caption: ObsoleteViewHelper.php
@@ -92,8 +141,8 @@ Deprecating ViewHelper arguments
 --------------------------------
 
 The :php-short:`\TYPO3Fluid\Fluid\Core\ViewHelper\ViewHelperNodeInitializedEventInterface`
-can also be used to deprecate a ViewHelper's argument. The deprecation will only
-be triggered if the argument is actually used in a template.
+can be used to deprecate a ViewHelper argument. The deprecation is only
+triggered if the argument is actually used in a template.
 
 ..  code-block:: php
     :caption: SomeViewHelper.php
@@ -125,7 +174,8 @@ be triggered if the argument is actually used in a template.
 Impact
 ======
 
-The new `fluid:analyse` console command can be used to check basic validity of Fluid
-templates in a project and can discover deprecated functionality used in template files.
+The new :bash:`typo3 fluid:analyze` console command can be used to check basic
+validity of Fluid templates in projects that use the `*.fluid.*` file
+extension and to discover deprecated functionality in template files.
 
 ..  index:: CLI, Fluid, ext:fluid
